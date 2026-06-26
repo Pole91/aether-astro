@@ -1,0 +1,162 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Geografi Quiz">
+  <div class="game-header">
+    <h2>🌍 Geografi Quiz</h2>
+    <p>Testa dina kunskaper om världens länder och städer!</p>
+  </div>
+
+  <div class="game-stats">
+    <div class="stat">
+      <span>Poäng:</span>
+      <span id="score">0</span>
+    </div>
+    <div class="stat">
+      <span>Rätt:</span>
+      <span id="correct">0</span>
+    </div>
+    <div class="stat">
+      <span>Framsteg:</span>
+      <span id="progress">1/10</span>
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="question-box">
+      <h3 id="question" class="question-text">Laddar...</h3>
+      <div id="answersContainer" class="answers-grid">
+      </div>
+    </div>
+  </div>
+
+  <div class="game-controls">
+    <button id="resetBtn" class="btn-reset">Ny Omgång</button>
+    <a href="/" class="btn-back">← Tillbaka</a>
+  </div>
+</Layout>
+
+<script>
+  const questions = [
+    {
+      question: 'Vilken är världens största kontinent?',
+      answers: ['Afrika', 'Asien', 'Europa', 'Australien'],
+      correct: 'Asien'
+    },
+    {
+      question: 'Vilken är huvudstaden i Frankrike?',
+      answers: ['London', 'Paris', 'Berlin', 'Amsterdam'],
+      correct: 'Paris'
+    },
+    {
+      question: 'Vilken är världens längsta flod?',
+      answers: ['Amazonas', 'Nil', 'Yangtze', 'Mississippi'],
+      correct: 'Nil'
+    },
+    {
+      question: 'I vilket land ligger pyramiderna?',
+      answers: ['Mexiko', 'Indien', 'Egypten', 'Peru'],
+      correct: 'Egypten'
+    },
+    {
+      question: 'Vilken är världens högsta berg?',
+      answers: ['K2', 'Mount Everest', 'Kilimanjaro', 'Denali'],
+      correct: 'Mount Everest'
+    },
+    {
+      question: 'Vilken är Sydamerikas största stad?',
+      answers: ['Bogotá', 'São Paulo', 'Lima', 'Caracas'],
+      correct: 'São Paulo'
+    },
+    {
+      question: 'Vilken är Australiens största stad?',
+      answers: ['Melbourne', 'Brisbane', 'Sydney', 'Perth'],
+      correct: 'Sydney'
+    },
+    {
+      question: 'Vilken är huvudstaden i Japan?',
+      answers: ['Osaka', 'Kyoto', 'Tokyo', 'Yokohama'],
+      correct: 'Tokyo'
+    },
+    {
+      question: 'Vilken strand är den längsta i världen?',
+      answers: ['Copacabana', 'Bondi', 'Playa Grande', 'Praia do Cassino'],
+      correct: 'Praia do Cassino'
+    },
+    {
+      question: 'Vilken är världens minsta nation?',
+      answers: ['Monaco', 'Luxemburg', 'Vatikanstaten', 'Malta'],
+      correct: 'Vatikanstaten'
+    }
+  ];
+
+  let currentIndex = 0;
+  let score = 0;
+  let correct = 0;
+  let currentQuestion = {};
+  let answered = false;
+
+  function loadQuestion() {
+    currentQuestion = questions[currentIndex];
+    answered = false;
+    document.getElementById('question').textContent = currentQuestion.question;
+    document.getElementById('progress').textContent = `${currentIndex + 1}/10`;
+
+    const container = document.getElementById('answersContainer');
+    container.innerHTML = '';
+
+    currentQuestion.answers.forEach(answer => {
+      const button = document.createElement('button');
+      button.className = 'answer-btn';
+      button.textContent = answer;
+      button.addEventListener('click', () => checkAnswer(answer, button));
+      container.appendChild(button);
+    });
+  }
+
+  function checkAnswer(selectedAnswer, button) {
+    if (answered) return;
+    answered = true;
+
+    const buttons = document.querySelectorAll('.answer-btn');
+    buttons.forEach(btn => btn.disabled = true);
+
+    if (selectedAnswer === currentQuestion.correct) {
+      correct++;
+      score += 10;
+      button.style.backgroundColor = '#4CAF50';
+      document.getElementById('score').textContent = score;
+      document.getElementById('correct').textContent = correct;
+    } else {
+      button.style.backgroundColor = '#F44336';
+      buttons.forEach(btn => {
+        if (btn.textContent === currentQuestion.correct) {
+          btn.style.backgroundColor = '#4CAF50';
+        }
+      });
+    }
+
+    setTimeout(() => {
+      currentIndex++;
+      if (currentIndex < questions.length) {
+        loadQuestion();
+      } else {
+        alert(`🎉 Quiz slut! Du fick ${score} poäng (${correct}/10 rätt)`);
+        resetGame();
+      }
+    }, 1500);
+  }
+
+  function resetGame() {
+    currentIndex = 0;
+    score = 0;
+    correct = 0;
+    document.getElementById('score').textContent = '0';
+    document.getElementById('correct').textContent = '0';
+    loadQuestion();
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', resetGame);
+  loadQuestion();
+</script>

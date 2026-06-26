@@ -1,0 +1,129 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Memory - Frukt Tema">
+  <div class="game-header">
+    <h2>🍎 Memory - Frukt Tema</h2>
+    <p>Hitta matchande fruktpar!</p>
+  </div>
+
+  <div class="game-stats">
+    <div class="stat">
+      <span>Försök:</span>
+      <span id="attempts">0</span>
+    </div>
+    <div class="stat">
+      <span>Par hittade:</span>
+      <span id="pairs">0/8</span>
+    </div>
+    <div class="stat">
+      <span>Tid:</span>
+      <span id="timer">00:00</span>
+    </div>
+  </div>
+
+  <div id="memoryBoard" class="memory-board"></div>
+
+  <div class="game-controls">
+    <button id="resetBtn" class="btn-reset">Ny Omgång</button>
+    <a href="/" class="btn-back">← Tillbaka</a>
+  </div>
+</Layout>
+
+<script>
+  const fruits = [
+    '🍎', '🍊', '🍋', '🍌',
+    '🍉', '🍓', '🍇', '🍑'
+  ];
+
+  const gameBoard = document.getElementById('memoryBoard');
+  const attemptsDisplay = document.getElementById('attempts');
+  const pairsDisplay = document.getElementById('pairs');
+  const timerDisplay = document.getElementById('timer');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let cards = [];
+  let attempts = 0;
+  let pairsFound = 0;
+  let flipped = [];
+  let matched = [];
+  let isProcessing = false;
+  let startTime = Date.now();
+  let timerInterval;
+
+  function initGame() {
+    cards = [...fruits, ...fruits].sort(() => Math.random() - 0.5);
+    gameBoard.innerHTML = '';
+    attempts = 0;
+    pairsFound = 0;
+    flipped = [];
+    matched = [];
+    isProcessing = false;
+    attemptsDisplay.textContent = '0';
+    pairsDisplay.textContent = '0/8';
+    startTime = Date.now();
+    clearInterval(timerInterval);
+
+    cards.forEach((fruit, index) => {
+      const card = document.createElement('div');
+      card.className = 'memory-card';
+      card.textContent = '?';
+      card.addEventListener('click', () => flipCard(index, card));
+      gameBoard.appendChild(card);
+    });
+
+    startTimer();
+  }
+
+  function flipCard(index, card) {
+    if (isProcessing || flipped.includes(index) || matched.includes(index)) return;
+
+    card.textContent = cards[index];
+    card.classList.add('flipped');
+    flipped.push(index);
+
+    if (flipped.length === 2) {
+      isProcessing = true;
+      attempts++;
+      attemptsDisplay.textContent = attempts.toString();
+
+      setTimeout(() => {
+        if (cards[flipped[0]] === cards[flipped[1]]) {
+          matched.push(...flipped);
+          pairsFound++;
+          pairsDisplay.textContent = `${pairsFound}/8`;
+
+          if (pairsFound === 8) {
+            setTimeout(() => {
+              clearInterval(timerInterval);
+              const time = timerDisplay.textContent;
+              alert(`🎉 Du vann! ${attempts} försök, Tid: ${time}`);
+            }, 500);
+          }
+        } else {
+          gameBoard.querySelectorAll('.memory-card').forEach((c, i) => {
+            if (!matched.includes(i) && flipped.includes(i)) {
+              c.textContent = '?';
+              c.classList.remove('flipped');
+            }
+          });
+        }
+        flipped = [];
+        isProcessing = false;
+      }, 1000);
+    }
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  resetBtn.addEventListener('click', initGame);
+  initGame();
+</script>

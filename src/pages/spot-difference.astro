@@ -1,0 +1,166 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Hitta Skillnaden">
+  <div class="game-header">
+    <h2>🔍 Hitta Skillnaden</h2>
+    <p>Klicka på skillnaderna mellan bilderna!</p>
+  </div>
+
+  <div class="game-stats">
+    <div class="stat">
+      <span>Skillnader:</span>
+      <span id="found">0/3</span>
+    </div>
+    <div class="stat">
+      <span>Tid:</span>
+      <span id="timer">00:00</span>
+    </div>
+  </div>
+
+  <div class="spot-difference-container">
+    <div class="image-wrapper">
+      <div class="spot-image" id="leftImage">
+        <svg width="300" height="300" viewBox="0 0 300 300">
+          <!-- Frukt korg scen-->
+          <rect width="300" height="300" fill="#FFE5B4"/>
+
+          <!-- Berg/himmel-->
+          <circle cx="250" cy="80" r="60" fill="#87CEEB"/>
+
+          <!-- Träd -->
+          <rect x="40" y="120" width="20" height="80" fill="#8B4513"/>
+          <circle cx="50" cy="100" r="40" fill="#228B22"/>
+
+          <!-- Äpple i träd-->
+          <circle cx="30" cy="85" r="8" fill="#FF0000"/>
+          <circle cx="70" cy="95" r="8" fill="#FF0000"/>
+
+          <!-- Frukt på marken -->
+          <circle cx="100" cy="220" r="15" fill="#FFA500"/> <!-- Apelsin -->
+          <circle cx="150" cy="230" r="12" fill="#FFFF00"/> <!-- Banan -->
+          <ellipse cx="200" cy="225" rx="12" ry="15" fill="#FF69B4"/> <!-- Vattenmelon -->
+
+          <!-- Korg -->
+          <path d="M 150 240 L 130 280 L 170 280 Z" fill="#8B4513"/>
+          <rect x="135" y="265" width="30" height="3" fill="#654321"/>
+        </svg>
+        <p class="image-label">Bild 1</p>
+      </div>
+
+      <div class="spot-image" id="rightImage">
+        <svg width="300" height="300" viewBox="0 0 300 300">
+          <!-- Frukt korg scen - med skillnader-->
+          <rect width="300" height="300" fill="#FFE5B4"/>
+
+          <!-- Berg/himmel - ÄNDRAD STORLEK -->
+          <circle cx="250" cy="80" r="50" fill="#87CEEB"/>
+
+          <!-- Träd -->
+          <rect x="40" y="120" width="20" height="80" fill="#8B4513"/>
+          <circle cx="50" cy="100" r="40" fill="#228B22"/>
+
+          <!-- Äpple i träd - EN SAKNAS -->
+          <circle cx="30" cy="85" r="8" fill="#FF0000"/>
+
+          <!-- Frukt på marken -->
+          <circle cx="100" cy="220" r="15" fill="#FFA500"/>
+          <circle cx="150" cy="230" r="12" fill="#FFFF00"/>
+          <ellipse cx="200" cy="225" rx="12" ry="15" fill="#FF69B4"/>
+
+          <!-- Korg - FÄRG ÄNDRAD -->
+          <path d="M 150 240 L 130 280 L 170 280 Z" fill="#D2691E"/>
+          <rect x="135" y="265" width="30" height="3" fill="#654321"/>
+
+          <!-- EXTRA: Sol tillagd -->
+          <circle cx="50" cy="50" r="20" fill="#FFD700"/>
+        </svg>
+        <p class="image-label">Bild 2</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="feedback" class="feedback"></div>
+
+  <div class="game-controls">
+    <button id="resetBtn" class="btn-reset">Ny Omgång</button>
+    <a href="/" class="btn-back">← Tillbaka</a>
+  </div>
+</Layout>
+
+<script>
+  const differences = [
+    { name: 'Molnet är mindre', rect: [220, 50, 80, 80] },
+    { name: 'Ett äpple saknas', rect: [60, 75, 30, 30] },
+    { name: 'Korgen är mörkare', rect: [130, 260, 50, 40] }
+  ];
+
+  let foundDifferences = [];
+  let startTime = Date.now();
+  let timerInterval;
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      document.getElementById('timer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  function checkClick(event, imageId) {
+    if (foundDifferences.length === differences.length) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Anpassa för SVG-viewport
+    const svgScale = rect.width / 300;
+    const svgX = x / svgScale;
+    const svgY = y / svgScale;
+
+    for (let i = 0; i < differences.length; i++) {
+      if (foundDifferences.includes(i)) continue;
+
+      const [diffX, diffY, diffW, diffH] = differences[i].rect;
+      if (svgX >= diffX && svgX <= diffX + diffW &&
+          svgY >= diffY && svgY <= diffY + diffH) {
+        foundDifferences.push(i);
+        document.getElementById('found').textContent = `${foundDifferences.length}/3`;
+
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = `✓ Du hittade: ${differences[i].name}!`;
+        feedback.style.color = '#4CAF50';
+
+        if (foundDifferences.length === differences.length) {
+          clearInterval(timerInterval);
+          const time = document.getElementById('timer').textContent;
+          setTimeout(() => {
+            alert(`🎉 Du hittade alla skillnader! Tid: ${time}`);
+          }, 500);
+        }
+        return;
+      }
+    }
+
+    const feedback = document.getElementById('feedback');
+    feedback.textContent = '❌ Ingen skillnad här!';
+    feedback.style.color = '#F44336';
+  }
+
+  document.getElementById('leftImage').addEventListener('click', (e) => checkClick(e, 'left'));
+  document.getElementById('rightImage').addEventListener('click', (e) => checkClick(e, 'right'));
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    foundDifferences = [];
+    document.getElementById('found').textContent = '0/3';
+    document.getElementById('feedback').textContent = '';
+    startTime = Date.now();
+    clearInterval(timerInterval);
+    startTimer();
+  });
+
+  startTimer();
+</script>

@@ -1,0 +1,176 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Ord-Ordning">
+  <div class="game-header">
+    <h2>📚 Ord-Ordning</h2>
+    <p>Ordna bokstäver för att skapa ordet på svenska!</p>
+  </div>
+
+  <div class="game-stats">
+    <div class="stat">
+      <span>Poäng:</span>
+      <span id="score">0</span>
+    </div>
+    <div class="stat">
+      <span>Löst:</span>
+      <span id="solved">0/10</span>
+    </div>
+  </div>
+
+  <div class="word-game-container">
+    <div class="word-hint">
+      <h3>Ledtråd:</h3>
+      <p id="hint">Laddar...</p>
+    </div>
+
+    <div class="scrambled-letters">
+      <div id="lettersContainer" class="letters-grid">
+      </div>
+    </div>
+
+    <div class="word-input">
+      <h3>Ditt svar:</h3>
+      <div id="answerDisplay" class="answer-display"></div>
+      <input type="text" id="answerInput" class="answer-input" placeholder="Eller skriv här...">
+      <button id="submitBtn" class="btn-submit">Skicka Svar</button>
+      <button id="hintBtn" class="btn-hint">Ledtråd</button>
+    </div>
+  </div>
+
+  <div class="game-controls">
+    <button id="resetBtn" class="btn-reset">Ny Omgång</button>
+    <a href="/" class="btn-back">← Tillbaka</a>
+  </div>
+</Layout>
+
+<script>
+  const words = [
+    { word: 'ÄPPLE', hint: 'En frukt som växer på träd' },
+    { word: 'ELEFANT', hint: 'En stor gråmålad djur' },
+    { word: 'SCHOOL', hint: 'Där du lär dig saker (eng)' },
+    { word: 'BLOMMA', hint: 'En vacker växt med färger' },
+    { word: 'HJÄRTA', hint: 'Den som slår i din bröst' },
+    { word: 'STJÄRNA', hint: 'Den lyser på natten på himlen' },
+    { word: 'DELFIN', hint: 'Ett smart sjödjur' },
+    { word: 'SOLROS', hint: 'En stor gul blomma' },
+    { word: 'TROLL', hint: 'En fantasiskapar från sagor' },
+    { word: 'SNÖFLINGA', hint: 'Faller från himlen när det snöar' }
+  ];
+
+  let currentWordIndex = 0;
+  let currentWord = {};
+  let scrambledLetters = [];
+  let selectedLetters = [];
+  let score = 0;
+  let solved = 0;
+
+  function getScrambledLetters(word) {
+    const letters = word.split('');
+    return letters.sort(() => Math.random() - 0.5);
+  }
+
+  function loadWord() {
+    if (currentWordIndex >= words.length) {
+      alert(`🎉 Du löste alla ord! Slutpoäng: ${score}`);
+      resetGame();
+      return;
+    }
+
+    currentWord = words[currentWordIndex];
+    scrambledLetters = getScrambledLetters(currentWord.word);
+    selectedLetters = [];
+
+    document.getElementById('hint').textContent = currentWord.hint;
+    document.getElementById('answerInput').value = '';
+    document.getElementById('answerDisplay').innerHTML = '';
+
+    const container = document.getElementById('lettersContainer');
+    container.innerHTML = '';
+
+    scrambledLetters.forEach((letter, index) => {
+      const btn = document.createElement('button');
+      btn.className = 'letter-btn';
+      btn.textContent = letter;
+      btn.addEventListener('click', () => selectLetter(index, letter, btn));
+      container.appendChild(btn);
+    });
+  }
+
+  function selectLetter(index, letter, btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.3';
+    selectedLetters.push({ index, letter, btn });
+    updateAnswerDisplay();
+  }
+
+  function updateAnswerDisplay() {
+    const display = document.getElementById('answerDisplay');
+    display.innerHTML = '';
+    selectedLetters.forEach((item, idx) => {
+      const letterBox = document.createElement('div');
+      letterBox.className = 'letter-box';
+      letterBox.textContent = item.letter;
+      letterBox.style.cursor = 'pointer';
+      letterBox.addEventListener('click', () => removeLetter(idx));
+      display.appendChild(letterBox);
+    });
+  }
+
+  function removeLetter(idx) {
+    const item = selectedLetters[idx];
+    item.btn.disabled = false;
+    item.btn.style.opacity = '1';
+    selectedLetters.splice(idx, 1);
+    updateAnswerDisplay();
+  }
+
+  function checkAnswer() {
+    const typedAnswer = document.getElementById('answerInput').value.toUpperCase().trim();
+    const clickedAnswer = selectedLetters.map(x => x.letter).join('');
+    const answer = typedAnswer || clickedAnswer;
+
+    if (answer === currentWord.word) {
+      score += 10;
+      solved++;
+      document.getElementById('score').textContent = score;
+      document.getElementById('solved').textContent = `${solved}/10`;
+
+      const display = document.getElementById('answerDisplay');
+      display.style.backgroundColor = '#4CAF50';
+      display.style.color = 'white';
+
+      setTimeout(() => {
+        currentWordIndex++;
+        loadWord();
+      }, 1000);
+    } else {
+      alert(`❌ Fel! Det rätta ordet är: ${currentWord.word}`);
+      currentWordIndex++;
+      loadWord();
+    }
+  }
+
+  function resetGame() {
+    currentWordIndex = 0;
+    score = 0;
+    solved = 0;
+    document.getElementById('score').textContent = '0';
+    document.getElementById('solved').textContent = '0/10';
+    loadWord();
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', checkAnswer);
+  document.getElementById('answerInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') checkAnswer();
+  });
+
+  document.getElementById('hintBtn').addEventListener('click', () => {
+    alert(`Ledtråd: ${currentWord.hint}`);
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+  loadWord();
+</script>

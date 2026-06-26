@@ -1,0 +1,120 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Mattekviz">
+  <div class="game-header">
+    <h2>🔢 Mattekviz</h2>
+    <p>Lösa snabba mattebetydande problem!</p>
+  </div>
+
+  <div class="game-stats">
+    <div class="stat">
+      <span>Poäng:</span>
+      <span id="score">0</span>
+    </div>
+    <div class="stat">
+      <span>Rätt:</span>
+      <span id="correct">0</span>
+    </div>
+    <div class="stat">
+      <span>Fel:</span>
+      <span id="wrong">0</span>
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="question-box">
+      <h3 id="question" class="question-text">Laddar...</h3>
+      <div id="answersContainer" class="answers-grid">
+      </div>
+    </div>
+  </div>
+
+  <div class="game-controls">
+    <button id="resetBtn" class="btn-reset">Ny Omgång</button>
+    <a href="/" class="btn-back">← Tillbaka</a>
+  </div>
+</Layout>
+
+<script>
+  function generateQuestion() {
+    const num1 = Math.floor(Math.random() * 20) + 1;
+    const num2 = Math.floor(Math.random() * 20) + 1;
+    const operation = ['+', '-', '*', '/'][Math.floor(Math.random() * 4)];
+
+    let answer;
+    if (operation === '+') answer = num1 + num2;
+    else if (operation === '-') answer = num1 - num2;
+    else if (operation === '*') answer = num1 * num2;
+    else answer = Math.floor(num1 / num2);
+
+    const question = `${num1} ${operation} ${num2} = ?`;
+
+    // Skapa fel svar
+    const wrongAnswers = new Set();
+    wrongAnswers.add(answer);
+    while (wrongAnswers.size < 4) {
+      const wrong = answer + (Math.floor(Math.random() * 10) - 5);
+      if (wrong !== answer && wrong >= 0) wrongAnswers.add(wrong);
+    }
+
+    const answers = [...wrongAnswers].sort(() => Math.random() - 0.5);
+
+    return { question, answer, answers };
+  }
+
+  let currentQuestion = {};
+  let score = 0;
+  let correct = 0;
+  let wrong = 0;
+
+  function loadQuestion() {
+    currentQuestion = generateQuestion();
+    document.getElementById('question').textContent = currentQuestion.question;
+
+    const container = document.getElementById('answersContainer');
+    container.innerHTML = '';
+
+    currentQuestion.answers.forEach(ans => {
+      const button = document.createElement('button');
+      button.className = 'answer-btn';
+      button.textContent = ans;
+      button.addEventListener('click', () => checkAnswer(ans));
+      container.appendChild(button);
+    });
+  }
+
+  function checkAnswer(selectedAnswer) {
+    if (selectedAnswer === currentQuestion.answer) {
+      correct++;
+      score += 10;
+      document.getElementById('score').textContent = score;
+      document.getElementById('correct').textContent = correct;
+      document.getElementById('answersContainer').style.backgroundColor = '#e8f5e9';
+      setTimeout(() => {
+        document.getElementById('answersContainer').style.backgroundColor = '';
+        loadQuestion();
+      }, 500);
+    } else {
+      wrong++;
+      document.getElementById('wrong').textContent = wrong;
+      document.getElementById('answersContainer').style.backgroundColor = '#ffebee';
+      setTimeout(() => {
+        document.getElementById('answersContainer').style.backgroundColor = '';
+      }, 500);
+    }
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    score = 0;
+    correct = 0;
+    wrong = 0;
+    document.getElementById('score').textContent = '0';
+    document.getElementById('correct').textContent = '0';
+    document.getElementById('wrong').textContent = '0';
+    loadQuestion();
+  });
+
+  loadQuestion();
+</script>

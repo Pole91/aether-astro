@@ -1,0 +1,271 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Logik Pussel">
+  <div class="game-header">
+    <h2>🧠 Logik Pussel</h2>
+    <p>Lösa roliga logik-pussel och utmaningar!</p>
+  </div>
+
+  <div class="game-stats">
+    <div class="stat">
+      <span>Poäng:</span>
+      <span id="score">0</span>
+    </div>
+    <div class="stat">
+      <span>Löst:</span>
+      <span id="solved">0/6</span>
+    </div>
+  </div>
+
+  <div class="puzzle-container">
+    <div class="puzzle-content">
+      <h3 id="puzzleTitle">Laddar...</h3>
+      <p id="puzzleDescription">Laddar...</p>
+      <div id="puzzleGame" class="puzzle-game">
+      </div>
+    </div>
+  </div>
+
+  <div class="game-controls">
+    <button id="nextBtn" class="btn-next">Nästa Pussel</button>
+    <button id="resetBtn" class="btn-reset">Ny Omgång</button>
+    <a href="/" class="btn-back">← Tillbaka</a>
+  </div>
+</Layout>
+
+<script>
+  const puzzles = [
+    {
+      title: 'Sortera siffror från minst till störst',
+      description: 'Klicka på siffrorna i rätt ordning: 1, 2, 3, 4, 5',
+      type: 'sequence',
+      items: [3, 1, 5, 2, 4],
+      correctOrder: [1, 2, 3, 4, 5]
+    },
+    {
+      title: 'Räkna formerna',
+      description: 'Hur många cirklar finns det?',
+      type: 'count',
+      render: `
+        <svg width="300" height="200" style="border: 1px solid #ccc;">
+          <circle cx="50" cy="50" r="30" fill="#FF6B6B"/>
+          <circle cx="150" cy="50" r="30" fill="#FF6B6B"/>
+          <rect x="250" y="20" width="40" height="40" fill="#4ECDC4"/>
+          <circle cx="100" cy="120" r="30" fill="#FF6B6B"/>
+          <circle cx="200" cy="120" r="30" fill="#FF6B6B"/>
+        </svg>
+      `,
+      answer: 4
+    },
+    {
+      title: 'Hittar mönstret',
+      description: 'Vilken form kommer nästa?',
+      type: 'pattern',
+      render: `
+        <div style="display: flex; gap: 20px; align-items: center;">
+          <div style="width:40px; height:40px; background:#FF6B6B; border-radius:0;"></div>
+          <div style="width:40px; height:40px; background:#4ECDC4; border-radius:50%;"></div>
+          <div style="width:40px; height:40px; background:#FF6B6B; border-radius:0;"></div>
+          <div style="width:40px; height:40px; background:#4ECDC4; border-radius:50%;"></div>
+          <span style="font-size:24px;">?</span>
+        </div>
+      `,
+      options: ['Röd Kvadrat', 'Blå Cirkel', 'Grön Triangel'],
+      answer: 'Röd Kvadrat'
+    },
+    {
+      title: 'Logik Gåta',
+      description: 'Om en äppena kostar 2 kronor och du köper 3 stycken, hur mycket kostar det?',
+      type: 'calculation',
+      answer: 6,
+      hint: '2 × 3 = ?'
+    },
+    {
+      title: 'Hitta det största numret',
+      description: 'Klicka på det största numret',
+      type: 'largest',
+      items: [47, 23, 89, 12, 56],
+      answer: 89
+    },
+    {
+      title: 'Matchande Par',
+      description: 'Hitta två identiska former',
+      type: 'matching',
+      pairs: ['🌟', '🎈', '🌟', '🎈', '🎭', '🎭']
+    }
+  ];
+
+  let currentPuzzleIndex = 0;
+  let score = 0;
+  let solved = 0;
+  let currentPuzzle = {};
+  let selectedSequence = [];
+
+  function loadPuzzle() {
+    currentPuzzle = puzzles[currentPuzzleIndex];
+    document.getElementById('puzzleTitle').textContent = currentPuzzle.title;
+    document.getElementById('puzzleDescription').textContent = currentPuzzle.description;
+
+    const gameDiv = document.getElementById('puzzleGame');
+    gameDiv.innerHTML = '';
+    selectedSequence = [];
+
+    if (currentPuzzle.type === 'sequence') {
+      currentPuzzle.items.forEach((num, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'puzzle-item';
+        btn.textContent = num;
+        btn.addEventListener('click', () => selectSequence(idx, btn));
+        gameDiv.appendChild(btn);
+      });
+    } else if (currentPuzzle.type === 'count') {
+      gameDiv.innerHTML = currentPuzzle.render;
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.placeholder = 'Skriv svar';
+      input.className = 'puzzle-input';
+      gameDiv.appendChild(input);
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Kontrollera';
+      btn.className = 'btn-check';
+      btn.addEventListener('click', () => {
+        if (parseInt(input.value) === currentPuzzle.answer) {
+          solvePuzzle();
+        } else {
+          alert(`❌ Fel! Rätt svar är ${currentPuzzle.answer}`);
+          nextPuzzle();
+        }
+      });
+      gameDiv.appendChild(btn);
+    } else if (currentPuzzle.type === 'pattern') {
+      gameDiv.innerHTML = currentPuzzle.render;
+
+      currentPuzzle.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'pattern-option';
+        btn.textContent = opt;
+        btn.addEventListener('click', () => {
+          if (opt === currentPuzzle.answer) {
+            solvePuzzle();
+          } else {
+            alert(`❌ Fel! Rätt svar är ${currentPuzzle.answer}`);
+            nextPuzzle();
+          }
+        });
+        gameDiv.appendChild(btn);
+      });
+    } else if (currentPuzzle.type === 'calculation') {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.placeholder = currentPuzzle.hint;
+      input.className = 'puzzle-input';
+      gameDiv.appendChild(input);
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Kontrollera';
+      btn.className = 'btn-check';
+      btn.addEventListener('click', () => {
+        if (parseInt(input.value) === currentPuzzle.answer) {
+          solvePuzzle();
+        } else {
+          alert(`❌ Fel! Rätt svar är ${currentPuzzle.answer}`);
+          nextPuzzle();
+        }
+      });
+      gameDiv.appendChild(btn);
+    } else if (currentPuzzle.type === 'largest') {
+      currentPuzzle.items.forEach((num, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'puzzle-item';
+        btn.textContent = num;
+        btn.addEventListener('click', () => {
+          if (num === currentPuzzle.answer) {
+            solvePuzzle();
+          } else {
+            alert(`❌ Fel! Det största numret är ${currentPuzzle.answer}`);
+            nextPuzzle();
+          }
+        });
+        gameDiv.appendChild(btn);
+      });
+    } else if (currentPuzzle.type === 'matching') {
+      const items = currentPuzzle.pairs;
+      items.forEach((emoji, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'emoji-btn';
+        btn.textContent = emoji;
+        btn.addEventListener('click', () => toggleEmoji(idx, btn));
+        gameDiv.appendChild(btn);
+      });
+    }
+  }
+
+  function selectSequence(idx, btn) {
+    selectedSequence.push(currentPuzzle.items[idx]);
+    btn.disabled = true;
+    btn.style.opacity = '0.3';
+
+    if (selectedSequence.length === currentPuzzle.items.length) {
+      if (JSON.stringify(selectedSequence) === JSON.stringify(currentPuzzle.correctOrder)) {
+        solvePuzzle();
+      } else {
+        alert('❌ Fel ordning!');
+        nextPuzzle();
+      }
+    }
+  }
+
+  function toggleEmoji(idx, btn) {
+    btn.classList.toggle('selected');
+    const selected = document.querySelectorAll('.emoji-btn.selected');
+    if (selected.length === 2) {
+      const emoji1 = selected[0].textContent;
+      const emoji2 = selected[1].textContent;
+      if (emoji1 === emoji2) {
+        selected.forEach(b => b.disabled = true);
+        if (document.querySelectorAll('.emoji-btn:not(:disabled)').length === 0) {
+          solvePuzzle();
+        }
+      } else {
+        setTimeout(() => {
+          selected.forEach(b => b.classList.remove('selected'));
+        }, 500);
+      }
+    }
+  }
+
+  function solvePuzzle() {
+    score += 10;
+    solved++;
+    document.getElementById('score').textContent = score;
+    document.getElementById('solved').textContent = `${solved}/6`;
+    nextPuzzle();
+  }
+
+  function nextPuzzle() {
+    currentPuzzleIndex++;
+    if (currentPuzzleIndex < puzzles.length) {
+      loadPuzzle();
+    } else {
+      alert(`🎉 Du löste alla pussel! Slutpoäng: ${score}`);
+      resetGame();
+    }
+  }
+
+  function resetGame() {
+    currentPuzzleIndex = 0;
+    score = 0;
+    solved = 0;
+    document.getElementById('score').textContent = '0';
+    document.getElementById('solved').textContent = '0/6';
+    loadPuzzle();
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', nextPuzzle);
+  document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+  loadPuzzle();
+</script>

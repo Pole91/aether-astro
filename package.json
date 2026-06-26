@@ -1,0 +1,14 @@
+{
+  "name": "kids-educational-games",
+  "version": "1.0.0",
+  "description": "Educational games for kids 8-11 years old",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.0.0"
+  }
+}
